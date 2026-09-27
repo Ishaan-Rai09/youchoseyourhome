@@ -233,22 +233,12 @@ export default function Home() {
         <p className="font-mono text-[13px] font-medium uppercase tracking-[0.22em]">
           {BRAND_NAME}
         </p>
-        <div className="flex items-center gap-5">
-          <Link
-            href="/manage"
-            className="font-mono text-[11px] text-muted transition hover:text-foreground"
-          >
-            my links
-          </Link>
-          <a
-            href="https://github.com/Ishaan-Rai09/youchoseyourhome"
-            target="_blank"
-            rel="noreferrer"
-            className="font-mono text-[11px] text-faint transition hover:text-foreground"
-          >
-            github ↗
-          </a>
-        </div>
+        <Link
+          href="/manage"
+          className="font-mono text-[11px] text-muted transition hover:text-foreground"
+        >
+          my links
+        </Link>
       </header>
 
       {/* Hero — two columns on desktop */}

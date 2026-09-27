@@ -29,7 +29,7 @@ type Stats = {
   daily: Array<{ day: string; count: number }>;
 };
 
-type StoredLink = { slug: string; token: string; at: number };
+type StoredLink = { slug: string; token: string; at: number; clicks?: number };
 const STORE_KEY = "glowup_links";
 const TOKEN_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -113,12 +113,26 @@ export default function ManagePage() {
   const [saved, setSaved] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [manualToken, setManualToken] = useState("");
+  const [notice, setNotice] = useState<string | null>(null);
 
   const load = useCallback(async (t: string) => {
     setLoading(true);
     setError(null);
     try {
       const res = await fetch(`/api/manage?token=${encodeURIComponent(t)}`);
+      if (res.status === 404) {
+        // Link was deleted (here or elsewhere) — purge it from this device
+        // and return to the picker instead of a dead end.
+        setStored((prev) => {
+          const next = prev.filter((l) => l.token !== t);
+          writeStored(next);
+          return next;
+        });
+        setToken(null);
+        setLink(null);
+        setNotice("That link no longer exists — it may have been deleted.");
+        return;
+      }
       const data = (await res.json()) as {
         link?: ManagedLink;
         stats?: Stats;
@@ -156,8 +170,27 @@ export default function ManagePage() {
       const params = new URLSearchParams(window.location.search);
       const t = params.get("token");
       const list = readStored();
+
+      // Sync the saved list with the database: drop links that no longer
+      // exist and refresh their click counts.
+      let valid: StoredLink[] = list;
+      if (list.length > 0) {
+        const checks = await Promise.allSettled(
+          list.slice(0, 20).map(async (l) => {
+            const res = await fetch(`/api/manage?token=${encodeURIComponent(l.token)}`);
+            if (!res.ok) return null;
+            const data = (await res.json()) as { link?: { clicks: number } };
+            return { ...l, clicks: data.link?.clicks ?? 0 };
+          }),
+        );
+        valid = checks
+          .map((c) => (c.status === "fulfilled" ? c.value : null))
+          .filter((x): x is StoredLink & { clicks: number } => x !== null);
+        writeStored(valid);
+      }
+
       if (cancelled) return;
-      setStored(list);
+      setStored(valid);
       if (t) {
         setToken(t);
         await load(t);
@@ -241,6 +274,9 @@ export default function ManagePage() {
           <h1 className="mt-3 text-2xl font-semibold tracking-tight">
             {stored.length > 0 ? "Your links" : "No links on this device yet"}
           </h1>
+          {notice && (
+            <p className="mt-3 text-[12px] leading-relaxed text-err">{notice}</p>
+          )}
           {stored.length > 0 ? (
             <div className="mt-5 space-y-2">
               {stored.map((s) => (
@@ -250,10 +286,13 @@ export default function ManagePage() {
                     setToken(s.token);
                     void load(s.token);
                   }}
-                  className="flex w-full items-center justify-between rounded-md border border-line bg-background px-4 py-3 font-mono text-[13px] transition hover:border-line-strong"
+                  className="flex w-full items-center justify-between gap-3 rounded-md border border-line bg-background px-4 py-3 font-mono text-[13px] transition hover:border-line-strong"
                 >
-                  <span className="truncate">/{s.slug}</span>
-                  <span className="shrink-0 text-[11px] text-faint">open →</span>
+                  <span className="min-w-0 truncate">/{s.slug}</span>
+                  <span className="flex shrink-0 items-center gap-2.5 text-[11px] text-faint">
+                    <span>{s.clicks ?? 0} clicks</span>
+                    <span>open →</span>
+                  </span>
                 </button>
               ))}
             </div>
