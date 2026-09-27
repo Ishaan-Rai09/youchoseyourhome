@@ -13,16 +13,16 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Purl — branded links for your deployments",
+  title: "Glowup — give your deploy URL a glow up",
   description:
-    "Turn ugly deploy URLs like my-app-8f3k2.vercel.app into a clean branded link that redirects to your site.",
+    "Turn ugly deploy URLs like beamdrop-6ym9.onrender.com into clean branded links that open your real site. No domain, no DNS, no code.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full scroll-smooth antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

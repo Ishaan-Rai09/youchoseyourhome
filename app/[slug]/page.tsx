@@ -60,17 +60,19 @@ export default async function SlugPage({ params }: Props) {
   if (!link) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
-        <div className="w-full max-w-md animate-fade-up rounded-2xl border border-border bg-card p-8">
-          <p className="font-mono text-sm text-neutral-400">{brandLink(slug)}</p>
-          <h1 className="mt-3 text-2xl font-semibold">This link is still up for grabs</h1>
-          <p className="mt-2 text-sm text-neutral-400">
+        <div className="w-full max-w-md animate-fade-up rounded-lg border border-line bg-card p-8">
+          <p className="font-mono text-[13px] text-muted">{brandLink(slug)}</p>
+          <h1 className="mt-3 text-2xl font-semibold tracking-tight">
+            This link is still open
+          </h1>
+          <p className="mt-2 text-sm leading-relaxed text-muted">
             Nobody has claimed it yet. Grab it before someone else does.
           </p>
           <Link
             href="/"
-            className="mt-6 inline-block rounded-full bg-accent px-6 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
+            className="mt-6 inline-block rounded-md bg-foreground px-6 py-2.5 text-[13px] font-semibold text-background transition hover:opacity-85"
           >
-            Claim it on Purl →
+            Claim it →
           </Link>
         </div>
       </main>

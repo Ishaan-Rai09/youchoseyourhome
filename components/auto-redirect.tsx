@@ -26,21 +26,21 @@ export default function AutoRedirect({
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
-      <div className="w-full max-w-md animate-fade-up rounded-2xl border border-border bg-card p-8">
-        <div className="mx-auto mb-5 h-10 w-10 animate-spin rounded-full border-2 border-border border-t-accent" />
+      <div className="w-full max-w-md animate-fade-up rounded-lg border border-line bg-card p-8">
+        <div className="mx-auto mb-6 h-7 w-7 animate-spin rounded-full border border-line border-t-foreground" />
         {!left ? (
           <>
-            <p className="text-sm text-neutral-400">Taking you to</p>
-            <p className="mt-1 text-lg font-semibold">{title}</p>
-            <p className="mt-4 break-all font-mono text-xs text-neutral-500">
-              {target}
+            <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-faint">
+              Redirecting
             </p>
+            <p className="mt-3 text-lg font-medium tracking-tight">{title}</p>
+            <p className="mt-4 break-all font-mono text-xs text-faint">{target}</p>
           </>
         ) : (
-          <p className="text-sm text-neutral-400">
-            Redirecting… if nothing happens,{" "}
-            <a href={target} className="text-accent underline">
-              click here
+          <p className="text-sm text-muted">
+            If nothing happens,{" "}
+            <a href={target} className="text-foreground underline underline-offset-4">
+              continue here
             </a>
             .
           </p>
