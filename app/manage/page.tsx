@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import QrCode from "@/components/qr-code";
+import AvatarImage from "@/components/avatar-image";
 import { BRAND_NAME, BRAND_HOST, brandLink } from "@/lib/brand";
 
 type BioLink = { label: string; url: string };
@@ -573,10 +574,13 @@ export default function ManagePage() {
             {bioEnabled ? (
               <div className="px-5 py-6 text-center">
                 {bioAvatar && (
-                  <div
-                    className="mx-auto mb-3 h-12 w-12 rounded-full border border-line-strong bg-cover bg-center"
-                    style={{ backgroundImage: `url(${bioAvatar})` }}
-                  />
+                  <div className="mx-auto mb-3 h-12 w-12 overflow-hidden rounded-full border border-line-strong bg-background">
+                    <AvatarImage
+                      src={bioAvatar}
+                      alt="Avatar preview"
+                      monogram={(bioName || link.title || link.slug).trim().slice(0, 1).toUpperCase()}
+                    />
+                  </div>
                 )}
                 <p className="text-lg font-semibold tracking-tight">
                   {bioName || link.title || link.slug}

@@ -85,6 +85,23 @@ function cleanBioLinks(raw: unknown): BioLink[] {
     .filter((l) => l.label && /^https?:\/\//i.test(l.url));
 }
 
+/**
+ * Users often paste search-result pages (Google Images etc.) instead of the
+ * image itself. Pull the real image URL out when we can spot it.
+ */
+export function extractImageUrl(raw: string): string {
+  try {
+    const u = new URL(raw);
+    if (u.hostname.includes("google.") && u.pathname.startsWith("/imgres")) {
+      const imgurl = u.searchParams.get("imgurl");
+      if (imgurl) return imgurl;
+    }
+    return raw;
+  } catch {
+    return raw;
+  }
+}
+
 export async function updateLink(
   slug: string,
   update: LinkUpdate,
@@ -103,7 +120,7 @@ export async function updateLink(
   if (update.bio_tagline !== undefined)
     patch.bio_tagline = update.bio_tagline?.slice(0, 140) ?? null;
   if (update.bio_avatar !== undefined) {
-    const v = (update.bio_avatar ?? "").trim();
+    const v = extractImageUrl((update.bio_avatar ?? "").trim());
     patch.bio_avatar = /^https?:\/\/.+/i.test(v) ? v.slice(0, 400) : null;
   }
   if (update.bio_links !== undefined) patch.bio_links = cleanBioLinks(update.bio_links);

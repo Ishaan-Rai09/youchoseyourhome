@@ -1,6 +1,8 @@
 import type { LinkRow } from "@/lib/supabase";
 import { brandLink } from "@/lib/brand";
 import CopyChip from "@/components/copy-chip";
+import AvatarImage from "@/components/avatar-image";
+import DelayedRedirect from "@/components/delayed-redirect";
 
 /**
  * Optional mini landing page shown at /<slug> instead of the instant redirect:
@@ -12,6 +14,45 @@ export default function BioPage({ link }: { link: LinkRow }) {
   const avatar = link.bio_avatar;
   const links = (link.bio_links ?? []).slice(0, 8);
   const monogram = name.trim().slice(0, 1).toUpperCase() || "#";
+
+  // No links to show? The bio card still flashes (brand moment), then the
+  // visitor is sent to the destination automatically.
+  if (links.length === 0) {
+    return (
+      <>
+        <DelayedRedirect target={link.target_url} delay={2200} />
+        <main className="flex min-h-screen items-center justify-center px-6 py-16">
+          <div
+            className="animate-fade-up w-full max-w-md rounded-2xl border border-line bg-card px-6 py-10 text-center sm:px-10"
+            style={{
+              backgroundImage:
+                "radial-gradient(rgba(255,255,255,0.045) 1px, transparent 1px)",
+              backgroundSize: "22px 22px",
+            }}
+          >
+            <div className="mx-auto grid h-20 w-20 place-items-center overflow-hidden rounded-full border border-line-strong bg-background">
+              {avatar ? (
+                <AvatarImage src={avatar} alt={name} monogram={monogram} />
+              ) : (
+                <span className="font-mono text-2xl font-semibold text-muted">{monogram}</span>
+              )}
+            </div>
+            <p className="mt-5 font-mono text-[11px] uppercase tracking-[0.22em] text-faint">
+              {brandLink(link.slug)}
+            </p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight">{name}</h1>
+            {tagline && (
+              <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-muted">{tagline}</p>
+            )}
+            <div className="mt-8 flex items-center justify-center gap-2.5 font-mono text-[11px] text-faint">
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border border-line border-t-foreground" />
+              <span>taking you to the site…</span>
+            </div>
+          </div>
+        </main>
+      </>
+    );
+  }
 
   return (
     <main className="flex min-h-screen items-center justify-center px-6 py-16">
@@ -28,16 +69,7 @@ export default function BioPage({ link }: { link: LinkRow }) {
           {/* Avatar */}
           <div className="mx-auto grid h-20 w-20 place-items-center overflow-hidden rounded-full border border-line-strong bg-background">
             {avatar ? (
-              <div
-                className="h-full w-full"
-                style={{
-                  backgroundImage: `url(${avatar})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }}
-                role="img"
-                aria-label={`${name} avatar`}
-              />
+              <AvatarImage src={avatar} alt={`${name} avatar`} monogram={monogram} />
             ) : (
               <span className="font-mono text-2xl font-semibold text-muted">
                 {monogram}
