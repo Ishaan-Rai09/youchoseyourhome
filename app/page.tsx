@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Reveal from "@/components/reveal";
 import { BRAND_NAME, BRAND_HOST, brandLink } from "@/lib/brand";
 
 type Metadata = {
@@ -167,8 +168,9 @@ export default function Home() {
       }
       setClaimed(data.link);
       setStep("done");
-      // Scroll the success card into view.
-      requestAnimationFrame(() => document.getElementById("tool")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+      requestAnimationFrame(() =>
+        document.getElementById("tool")?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      );
     } catch (err) {
       setClaimError(err instanceof Error ? err.message : "Something went wrong.");
       // A taken slug invalidates the suggestion list's availability info.
@@ -197,7 +199,7 @@ export default function Home() {
     document.getElementById("tool")?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   return (
-    <main className="mx-auto w-full max-w-2xl px-6">
+    <main className="mx-auto w-full max-w-6xl px-6 sm:px-10">
       {/* Nav */}
       <header className="flex items-center justify-between py-5">
         <p className="font-mono text-[13px] font-medium uppercase tracking-[0.22em]">
@@ -213,321 +215,381 @@ export default function Home() {
         </a>
       </header>
 
-      {/* Hero */}
-      <section className="pb-14 pt-16 text-center sm:pt-24">
-        <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-faint">
-          For people who ship
-        </p>
-        <h1 className="mx-auto mt-5 max-w-xl text-[44px] font-semibold leading-[1.02] tracking-[-0.03em] sm:text-[64px]">
-          Your project deserves
-          <br />
-          <span className="text-muted">a better address.</span>
-        </h1>
-        <p className="mx-auto mt-6 max-w-md text-[15px] leading-relaxed text-muted">
-          You deployed the thing. The URL is a random string of garbage. Paste it
-          here, pick a name you&apos;re proud of, and share a link that looks like
-          you planned it all along.
-        </p>
-        <div className="mt-8 flex items-center justify-center gap-3">
-          <button
-            onClick={scrollToTool}
-            className="rounded-md bg-foreground px-6 py-2.5 text-[13px] font-semibold text-background transition hover:opacity-85"
-          >
-            Glow up a link
-          </button>
-          <a
-            href="#how"
-            className="rounded-md border border-line px-6 py-2.5 text-[13px] font-medium text-muted transition hover:border-line-strong hover:text-foreground"
-          >
-            How it works
-          </a>
+      {/* Hero — two columns on desktop */}
+      <section className="grid items-center gap-10 pb-16 pt-12 sm:pt-20 lg:grid-cols-[1.1fr_0.9fr] lg:gap-14">
+        <div>
+          <Reveal>
+            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-faint">
+              For people who ship
+            </p>
+          </Reveal>
+          <Reveal delay={90}>
+            <h1 className="mt-5 text-[44px] font-semibold leading-[1.02] tracking-[-0.03em] sm:text-[64px]">
+              Your project deserves
+              <br />
+              <span className="text-muted">a better address.</span>
+            </h1>
+          </Reveal>
+          <Reveal delay={180}>
+            <p className="mt-6 max-w-md text-[15px] leading-relaxed text-muted">
+              You deployed the thing. The URL is a random string of garbage. Paste
+              it here, pick a name you&apos;re proud of, and share a link that
+              looks like you planned it all along.
+            </p>
+          </Reveal>
+          <Reveal delay={260}>
+            <div className="mt-8 flex items-center gap-3">
+              <button
+                onClick={scrollToTool}
+                className="rounded-md bg-foreground px-6 py-2.5 text-[13px] font-semibold text-background transition hover:opacity-85"
+              >
+                Glow up a link
+              </button>
+              <a
+                href="#how"
+                className="rounded-md border border-line px-6 py-2.5 text-[13px] font-medium text-muted transition hover:border-line-strong hover:text-foreground"
+              >
+                How it works
+              </a>
+            </div>
+          </Reveal>
         </div>
+
+        {/* Hero visual — before/after with a moving dash */}
+        <Reveal delay={340} className="hidden lg:block">
+          <div className="rounded-lg border border-line bg-card/80 p-5">
+            <div className="flex items-center justify-between">
+              <Label>Live transform</Label>
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-ok" />
+            </div>
+            <div className="mt-4 space-y-3">
+              <div className="rounded-md border border-line bg-background px-3.5 py-2.5">
+                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">
+                  Before
+                </p>
+                <p className="mt-1 truncate font-mono text-[12px] text-muted line-through decoration-err/60">
+                  beamdrop-6ym9.onrender.com
+                </p>
+              </div>
+              <div className="flex justify-center" aria-hidden>
+                <span className="font-mono text-[13px] text-faint">↓</span>
+              </div>
+              <div className="rounded-md border border-line-strong bg-background px-3.5 py-2.5">
+                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ok">
+                  After
+                </p>
+                <p className="mt-1 truncate font-mono text-[12px] font-semibold">
+                  {brandLink("beamdrop")}
+                </p>
+              </div>
+            </div>
+            <p className="mt-4 text-[12px] leading-relaxed text-faint">
+              Same destination. Different first impression.
+            </p>
+          </div>
+          <p className="mt-3 text-center font-mono text-[10px] uppercase tracking-[0.2em] text-faint">
+            move your cursor — the grid follows
+          </p>
+        </Reveal>
       </section>
 
       {/* ————— The tool ————— */}
       <section id="tool" className="scroll-mt-6 border-t border-line pt-10">
-        {step === "input" && (
-          <div className="animate-fade-up">
-            <div className="mb-4 flex items-baseline justify-between">
-              <Label>Step 1 — Paste your deployed URL</Label>
-            </div>
-            <div className="rounded-lg border border-line bg-card">
-              <div className="p-5">
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  <input
-                    value={urlInput}
-                    onChange={(e) => setUrlInput(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && void analyze()}
-                    placeholder="beamdrop-6ym9.onrender.com"
-                    className="w-full rounded-md border border-line bg-background px-3.5 py-2.5 font-mono text-[13px] outline-none transition placeholder:text-faint focus:border-line-strong"
-                    autoFocus
-                  />
-                  <button
-                    onClick={() => void analyze()}
-                    disabled={loadingSuggest}
-                    className="shrink-0 rounded-md bg-foreground px-5 py-2.5 text-[13px] font-semibold text-background transition hover:opacity-85 disabled:opacity-40"
-                  >
-                    {loadingSuggest ? "Reading…" : "Continue"}
-                  </button>
+        <Reveal>
+          {step === "input" && (
+            <div className="animate-fade-up">
+              <div className="mb-4 flex items-baseline justify-between">
+                <Label>Step 1 — Paste your deployed URL</Label>
+              </div>
+              <div className="mx-auto max-w-3xl rounded-lg border border-line bg-card">
+                <div className="p-5">
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <input
+                      value={urlInput}
+                      onChange={(e) => setUrlInput(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && void analyze()}
+                      placeholder="beamdrop-6ym9.onrender.com"
+                      className="w-full rounded-md border border-line bg-background px-3.5 py-2.5 font-mono text-[13px] outline-none transition placeholder:text-faint focus:border-line-strong"
+                      autoFocus
+                    />
+                    <button
+                      onClick={() => void analyze()}
+                      disabled={loadingSuggest}
+                      className="shrink-0 rounded-md bg-foreground px-5 py-2.5 text-[13px] font-semibold text-background transition hover:opacity-85 disabled:opacity-40"
+                    >
+                      {loadingSuggest ? "Reading…" : "Continue"}
+                    </button>
+                  </div>
+                  {urlError ? (
+                    <p className="mt-3 text-[13px] text-err">{urlError}</p>
+                  ) : (
+                    <p className="mt-3 text-xs text-faint">
+                      Works with Render, Vercel, Netlify, GitHub Pages — any public URL.
+                    </p>
+                  )}
                 </div>
-                {urlError ? (
-                  <p className="mt-3 text-[13px] text-err">{urlError}</p>
-                ) : (
-                  <p className="mt-3 text-xs text-faint">
-                    Works with Render, Vercel, Netlify, GitHub Pages — any public URL.
-                  </p>
-                )}
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {step === "branding" && meta && (
-          <div className="animate-fade-up">
-            <div className="mb-4 flex items-baseline justify-between">
-              <Label>Step 2 — Say what it is, pick a name</Label>
-              <button
-                onClick={() => {
-                  setStep("input");
-                  setMeta(null);
-                  setDescription("");
-                  setSuggestions([]);
-                }}
-                className="font-mono text-[11px] text-faint transition hover:text-foreground"
-              >
-                ← start over
-              </button>
-            </div>
-
-            <div className="rounded-lg border border-line bg-card">
-              {/* Detected site */}
-              <div className="border-b border-line px-5 py-3.5">
-                <Label>Detected</Label>
-                <h2 className="mt-1.5 truncate text-[15px] font-medium tracking-tight">
-                  {meta.title ?? meta.hostname ?? resolvedUrl}
-                </h2>
-                {meta.description && (
-                  <p className="mt-1 line-clamp-2 text-[13px] leading-relaxed text-muted">
-                    {meta.description}
-                  </p>
-                )}
+          {step === "branding" && meta && (
+            <div className="animate-fade-up">
+              <div className="mb-4 flex items-baseline justify-between">
+                <Label>Step 2 — Say what it is, pick a name</Label>
+                <button
+                  onClick={() => {
+                    setStep("input");
+                    setMeta(null);
+                    setDescription("");
+                    setSuggestions([]);
+                  }}
+                  className="font-mono text-[11px] text-faint transition hover:text-foreground"
+                >
+                  ← start over
+                </button>
               </div>
 
-              {/* Brand description */}
-              <div className="border-b border-line px-5 py-4">
-                <Label>What is it about?</Label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={3}
-                  maxLength={400}
-                  placeholder="A coffee subscription delivering single-origin beans from Ethiopian roasters every month"
-                  className="mt-2.5 w-full resize-none rounded-md border border-line bg-background px-3.5 py-2.5 text-[13px] leading-relaxed outline-none transition placeholder:text-faint focus:border-line-strong"
-                  autoFocus
-                />
-                <p className="mt-1.5 text-right font-mono text-[10px] text-faint">
-                  {description.length}/400
-                </p>
-              </div>
-
-              {/* Suggestions */}
-              <div className="px-5 py-4">
-                <div className="flex items-baseline justify-between">
-                  <Label>Pick a name</Label>
-                  {!aiEnabled && !loadingSuggest && (
-                    <span className="font-mono text-[10px] text-faint">
-                      smart match — add NVIDIA_API_KEY for AI
-                    </span>
+              <div className="mx-auto max-w-3xl rounded-lg border border-line bg-card">
+                {/* Detected site */}
+                <div className="border-b border-line px-5 py-3.5">
+                  <Label>Detected</Label>
+                  <h2 className="mt-1.5 truncate text-[15px] font-medium tracking-tight">
+                    {meta.title ?? meta.hostname ?? resolvedUrl}
+                  </h2>
+                  {meta.description && (
+                    <p className="mt-1 line-clamp-2 text-[13px] leading-relaxed text-muted">
+                      {meta.description}
+                    </p>
                   )}
                 </div>
 
-                {loadingSuggest && (
-                  <div className="mt-3 divide-y divide-line rounded-lg border border-line bg-background">
-                    {[...Array(4)].map((_, i) => (
-                      <div key={i} className="flex items-center gap-3 px-4 py-3.5">
-                        <div className="h-3.5 w-2/5 animate-pulse rounded bg-line-strong/60" />
-                        <div className="ml-auto h-3 w-14 animate-pulse rounded bg-line-strong/40" />
-                      </div>
-                    ))}
-                  </div>
-                )}
+                {/* Brand description */}
+                <div className="border-b border-line px-5 py-4">
+                  <Label>What is it about?</Label>
+                  <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    rows={3}
+                    maxLength={400}
+                    placeholder="A coffee subscription delivering single-origin beans from Ethiopian roasters every month"
+                    className="mt-2.5 w-full resize-none rounded-md border border-line bg-background px-3.5 py-2.5 text-[13px] leading-relaxed outline-none transition placeholder:text-faint focus:border-line-strong"
+                    autoFocus
+                  />
+                  <p className="mt-1.5 text-right font-mono text-[10px] text-faint">
+                    {description.length}/400
+                  </p>
+                </div>
 
-                {!loadingSuggest && suggestions.length > 0 && (
-                  <div className="mt-3 divide-y divide-line overflow-hidden rounded-lg border border-line bg-background">
-                    {suggestions.map((s) => {
-                      const isSel = !customSlug && selected === s.slug;
-                      return (
-                        <button
-                          key={s.slug}
-                          disabled={!s.available}
-                          onClick={() => {
-                            setSelected(s.slug);
-                            setCustomSlug("");
-                          }}
-                          className={`flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition ${
-                            isSel
-                              ? "bg-foreground/[0.06]"
-                              : s.available
-                                ? "hover:bg-foreground/[0.03]"
-                                : "opacity-40"
-                          }`}
-                        >
-                          <span className="flex min-w-0 items-center gap-3">
-                            <span
-                              className={`grid h-4 w-4 shrink-0 place-items-center rounded-sm border ${
-                                isSel ? "border-foreground bg-foreground" : "border-line-strong"
-                              }`}
-                            >
-                              {isSel && (
-                                <span className="text-[9px] font-bold leading-none text-background">
-                                  ✓
-                                </span>
-                              )}
-                            </span>
-                            <span className="truncate font-mono text-[13px]">
-                              {host}/
-                              <span className="font-semibold text-foreground">{s.slug}</span>
-                            </span>
-                          </span>
-                          <span className="flex shrink-0 items-center gap-2.5">
-                            {s.source === "ai" && (
-                              <span className="rounded border border-line px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.15em] text-muted">
-                                AI
-                              </span>
-                            )}
-                            <span
-                              className={`font-mono text-[11px] ${
-                                s.available ? (isSel ? "text-foreground" : "text-faint") : "text-err"
-                              }`}
-                            >
-                              {s.available ? (isSel ? "selected" : "open") : "taken"}
-                            </span>
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* Custom slug */}
-                <div className="mt-4 rounded-lg border border-line bg-background px-4 py-3.5">
-                  <Label>Or type your own</Label>
-                  <div className="mt-1.5 flex items-center gap-1 font-mono text-[13px]">
-                    <span className="text-faint">{host}/</span>
-                    <input
-                      value={customSlug}
-                      onChange={(e) =>
-                        setCustomSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))
-                      }
-                      placeholder="your-name"
-                      className="w-full bg-transparent font-semibold outline-none placeholder:text-faint"
-                      maxLength={50}
-                    />
-                    {customSlug.length > 0 && (
-                      <span
-                        className={`shrink-0 font-mono text-[11px] ${
-                          SLUG_RE.test(customSlug) ? "text-ok" : "text-err"
-                        }`}
-                      >
-                        {SLUG_RE.test(customSlug) ? "ok" : "invalid"}
+                {/* Suggestions */}
+                <div className="px-5 py-4">
+                  <div className="flex items-baseline justify-between">
+                    <Label>Pick a name</Label>
+                    {!aiEnabled && !loadingSuggest && (
+                      <span className="font-mono text-[10px] text-faint">
+                        smart match — add NVIDIA_API_KEY for AI
                       </span>
                     )}
                   </div>
+
+                  {loadingSuggest && (
+                    <div className="mt-3 divide-y divide-line rounded-lg border border-line bg-background">
+                      {[...Array(4)].map((_, i) => (
+                        <div key={i} className="flex items-center gap-3 px-4 py-3.5">
+                          <div className="h-3.5 w-2/5 animate-pulse rounded bg-line-strong/60" />
+                          <div className="ml-auto h-3 w-14 animate-pulse rounded bg-line-strong/40" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {!loadingSuggest && suggestions.length > 0 && (
+                    <div className="mt-3 divide-y divide-line overflow-hidden rounded-lg border border-line bg-background">
+                      {suggestions.map((s, i) => {
+                        const isSel = !customSlug && selected === s.slug;
+                        return (
+                          <button
+                            key={s.slug}
+                            disabled={!s.available}
+                            onClick={() => {
+                              setSelected(s.slug);
+                              setCustomSlug("");
+                            }}
+                            className={`flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition ${
+                              isSel
+                                ? "bg-foreground/[0.06]"
+                                : s.available
+                                  ? "hover:bg-foreground/[0.03]"
+                                  : "opacity-40"
+                            }`}
+                            style={{ animation: `fade-up 0.4s cubic-bezier(0.22,1,0.36,1) ${i * 60}ms both` }}
+                          >
+                            <span className="flex min-w-0 items-center gap-3">
+                              <span
+                                className={`grid h-4 w-4 shrink-0 place-items-center rounded-sm border ${
+                                  isSel ? "border-foreground bg-foreground" : "border-line-strong"
+                                }`}
+                              >
+                                {isSel && (
+                                  <span className="text-[9px] font-bold leading-none text-background">
+                                    ✓
+                                  </span>
+                                )}
+                              </span>
+                              <span className="truncate font-mono text-[13px]">
+                                {host}/
+                                <span className="font-semibold text-foreground">{s.slug}</span>
+                              </span>
+                            </span>
+                            <span className="flex shrink-0 items-center gap-2.5">
+                              {s.source === "ai" && (
+                                <span className="rounded border border-line px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.15em] text-muted">
+                                  AI
+                                </span>
+                              )}
+                              <span
+                                className={`font-mono text-[11px] ${
+                                  s.available ? (isSel ? "text-foreground" : "text-faint") : "text-err"
+                                }`}
+                              >
+                                {s.available ? (isSel ? "selected" : "open") : "taken"}
+                              </span>
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Custom slug */}
+                  <div className="mt-4 rounded-lg border border-line bg-background px-4 py-3.5">
+                    <Label>Or type your own</Label>
+                    <div className="mt-1.5 flex items-center gap-1 font-mono text-[13px]">
+                      <span className="text-faint">{host}/</span>
+                      <input
+                        value={customSlug}
+                        onChange={(e) =>
+                          setCustomSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))
+                        }
+                        placeholder="your-name"
+                        className="w-full bg-transparent font-semibold outline-none placeholder:text-faint"
+                        maxLength={50}
+                      />
+                      {customSlug.length > 0 && (
+                        <span
+                          className={`shrink-0 font-mono text-[11px] ${
+                            SLUG_RE.test(customSlug) ? "text-ok" : "text-err"
+                          }`}
+                        >
+                          {SLUG_RE.test(customSlug) ? "ok" : "invalid"}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {claimError && <p className="mt-3 text-[13px] text-err">{claimError}</p>}
+
+                  <button
+                    onClick={() => void claim()}
+                    disabled={claiming || !activeSlug || (!!customSlug && !SLUG_RE.test(customSlug))}
+                    className="mt-5 w-full rounded-md bg-foreground px-6 py-3 text-[13px] font-semibold text-background transition hover:opacity-85 disabled:opacity-30"
+                  >
+                    {claiming
+                      ? "Claiming…"
+                      : activeSlug
+                        ? `Claim ${host}/${activeSlug}`
+                        : "Pick or type a name first"}
+                  </button>
                 </div>
+              </div>
+            </div>
+          )}
 
-                {claimError && <p className="mt-3 text-[13px] text-err">{claimError}</p>}
-
+          {step === "done" && claimed && (
+            <div className="animate-fade-up">
+              <div className="mb-4 flex items-baseline justify-between">
+                <Label>Step 3 — Done</Label>
                 <button
-                  onClick={() => void claim()}
-                  disabled={claiming || !activeSlug || (!!customSlug && !SLUG_RE.test(customSlug))}
-                  className="mt-5 w-full rounded-md bg-foreground px-6 py-3 text-[13px] font-semibold text-background transition hover:opacity-85 disabled:opacity-30"
+                  onClick={reset}
+                  className="font-mono text-[11px] text-faint transition hover:text-foreground"
                 >
-                  {claiming
-                    ? "Claiming…"
-                    : activeSlug
-                      ? `Claim ${host}/${activeSlug}`
-                      : "Pick or type a name first"}
+                  make another ↺
                 </button>
               </div>
-            </div>
-          </div>
-        )}
 
-        {step === "done" && claimed && (
-          <div className="animate-fade-up">
-            <div className="mb-4 flex items-baseline justify-between">
-              <Label>Step 3 — Done</Label>
-              <button
-                onClick={reset}
-                className="font-mono text-[11px] text-faint transition hover:text-foreground"
-              >
-                make another ↺
-              </button>
-            </div>
-
-            <div className="rounded-lg border border-line bg-card">
-              <div className="flex items-center gap-2.5 border-b border-line px-5 py-3.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-ok" />
-                <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
-                  Live
-                </p>
-              </div>
-
-              <div className="px-5 py-6">
-                <p className="text-sm text-muted">Your link</p>
-                <div className="mt-2 flex items-center justify-between gap-3 rounded-md border border-line bg-background px-3.5 py-3">
-                  <span className="truncate font-mono text-[15px] font-semibold">
-                    {host}/{claimed.slug}
-                  </span>
-                  <CopyButton text={fullLink(claimed.slug)} />
+              <div className="mx-auto max-w-3xl rounded-lg border border-line bg-card">
+                <div className="flex items-center gap-2.5 border-b border-line px-5 py-3.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-ok" />
+                  <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
+                    Live
+                  </p>
                 </div>
 
-                {/* What a shared-link preview shows */}
-                <div className="mt-6">
-                  <Label>In a chat or DM, people see</Label>
-                  <div className="mt-2.5 overflow-hidden rounded-md border border-line bg-background">
-                    <div className="border-b border-line px-4 py-3">
-                      <p className="truncate text-[13px] font-medium">
-                        {claimed.title ?? brandLink(claimed.slug)}
-                      </p>
-                      <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-muted">
-                        {claimed.description ?? claimed.targetUrl}
-                      </p>
-                      <p className="mt-2 truncate font-mono text-[10px] uppercase tracking-wide text-faint">
+                <div className="grid gap-6 px-5 py-6 lg:grid-cols-[1.2fr_0.8fr]">
+                  <div>
+                    <p className="text-sm text-muted">Your link</p>
+                    <div className="mt-2 flex items-center justify-between gap-3 rounded-md border border-line bg-background px-3.5 py-3">
+                      <span className="truncate font-mono text-[15px] font-semibold">
                         {host}/{claimed.slug}
+                      </span>
+                      <CopyButton text={fullLink(claimed.slug)} />
+                    </div>
+                    <p className="mt-3 text-[13px] leading-relaxed text-faint">
+                      Anyone who opens it lands straight on{" "}
+                      <span className="font-mono">
+                        {claimed.targetUrl.replace(/^https?:\/\//, "")}
+                      </span>
+                      .
+                    </p>
+                    <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                      <button
+                        onClick={reset}
+                        className="rounded-md border border-line px-5 py-2.5 text-[13px] font-medium text-muted transition hover:border-line-strong hover:text-foreground"
+                      >
+                        Make another
+                      </button>
+                      <a
+                        href={fullLink(claimed.slug)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-md bg-foreground px-5 py-2.5 text-center text-[13px] font-semibold text-background transition hover:opacity-85"
+                      >
+                        Open link ↗
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* What a shared-link preview shows */}
+                  <div>
+                    <Label>In a chat or DM</Label>
+                    <div className="mt-2.5 overflow-hidden rounded-md border border-line bg-background">
+                      <div className="border-b border-line px-4 py-3">
+                        <p className="truncate text-[13px] font-medium">
+                          {claimed.title ?? brandLink(claimed.slug)}
+                        </p>
+                        <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-muted">
+                          {claimed.description ?? claimed.targetUrl}
+                        </p>
+                        <p className="mt-2 truncate font-mono text-[10px] uppercase tracking-wide text-faint">
+                          {host}/{claimed.slug}
+                        </p>
+                      </div>
+                      <p className="px-4 py-2.5 font-mono text-[11px] text-faint">
+                        ↳ opens {claimed.targetUrl.replace(/^https?:\/\//, "")}
                       </p>
                     </div>
-                    <p className="px-4 py-2.5 font-mono text-[11px] text-faint">
-                      ↳ opens {claimed.targetUrl.replace(/^https?:\/\//, "")}
-                    </p>
                   </div>
-                </div>
-
-                <div className="mt-6 flex flex-col justify-end gap-3 sm:flex-row">
-                  <button
-                    onClick={reset}
-                    className="rounded-md border border-line px-5 py-2.5 text-[13px] font-medium text-muted transition hover:border-line-strong hover:text-foreground"
-                  >
-                    Make another
-                  </button>
-                  <a
-                    href={fullLink(claimed.slug)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-md bg-foreground px-5 py-2.5 text-center text-[13px] font-semibold text-background transition hover:opacity-85"
-                  >
-                    Open link ↗
-                  </a>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </Reveal>
       </section>
 
       {/* ————— How it works ————— */}
       <section id="how" className="mt-20 scroll-mt-6 border-t border-line pt-10">
-        <Label>How it works</Label>
+        <Reveal>
+          <Label>How it works</Label>
+        </Reveal>
         <div className="mt-6 grid gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-3">
           {[
             {
@@ -545,40 +607,50 @@ export default function Home() {
               title: "Share",
               body: "Your link opens the real deployment instantly — and unfurls with your project's title in chats and DMs.",
             },
-          ].map((s) => (
-            <div key={s.n} className="bg-card p-5">
-              <p className="font-mono text-[11px] text-faint">{s.n}</p>
-              <h3 className="mt-2.5 text-[15px] font-medium tracking-tight">{s.title}</h3>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-muted">{s.body}</p>
-            </div>
+          ].map((s, i) => (
+            <Reveal key={s.n} delay={i * 120} className="h-full">
+              <div className="h-full bg-card p-5">
+                <p className="font-mono text-[11px] text-faint">{s.n}</p>
+                <h3 className="mt-2.5 text-[15px] font-medium tracking-tight">{s.title}</h3>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-muted">{s.body}</p>
+              </div>
+            </Reveal>
           ))}
         </div>
       </section>
 
-      {/* ————— Before / after ————— */}
+      {/* ————— The whole point ————— */}
       <section className="mt-16 border-t border-line pt-10">
-        <Label>The whole point</Label>
+        <Reveal>
+          <Label>The whole point</Label>
+        </Reveal>
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-lg border border-line bg-card p-5">
-            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">
-              Before
-            </p>
-            <p className="mt-3 break-all font-mono text-[12px] leading-relaxed text-muted line-through decoration-err/60">
-              beamdrop-6ym9.onrender.com
-            </p>
-          </div>
-          <div className="rounded-lg border border-line bg-card p-5">
-            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ok">
-              After
-            </p>
-            <p className="mt-3 break-all font-mono text-[12px] font-semibold leading-relaxed">
-              {brandLink("beamdrop")}
-            </p>
-          </div>
+          <Reveal delay={0}>
+            <div className="rounded-lg border border-line bg-card p-5">
+              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">
+                Before
+              </p>
+              <p className="mt-3 break-all font-mono text-[12px] leading-relaxed text-muted line-through decoration-err/60">
+                beamdrop-6ym9.onrender.com
+              </p>
+            </div>
+          </Reveal>
+          <Reveal delay={140}>
+            <div className="rounded-lg border border-line bg-card p-5">
+              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ok">
+                After
+              </p>
+              <p className="mt-3 break-all font-mono text-[12px] font-semibold leading-relaxed">
+                {brandLink("beamdrop")}
+              </p>
+            </div>
+          </Reveal>
         </div>
-        <p className="mt-4 text-[13px] leading-relaxed text-faint">
-          Same destination. Different first impression.
-        </p>
+        <Reveal delay={240}>
+          <p className="mt-4 text-[13px] leading-relaxed text-faint">
+            Same destination. Different first impression.
+          </p>
+        </Reveal>
       </section>
 
       {/* Footer */}
