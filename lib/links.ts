@@ -1,9 +1,11 @@
 import { getAdminClient, isDbConfigured, type LinkRow } from "./supabase";
 import {
   encrypt,
+  decryptWithMeta,
   maybeDecrypt,
   generateManageToken,
   hashToken,
+  hmacAll,
 } from "./crypto";
 import { normalizeUrl } from "./scrape";
 
@@ -32,20 +34,47 @@ type LinkRecord = {
   bio_links: BioLink[] | null;
 };
 
+/** Decrypt one field; plaintext (pre-migration) passes through as key 0. */
+function decryptField(value: string | null | undefined): {
+  value: string | null;
+  keyIndex: number;
+} {
+  if (!value) return { value: null, keyIndex: -1 };
+  if (!value.startsWith("v1:")) return { value, keyIndex: 0 };
+  return decryptWithMeta(value);
+}
+
+/** Re-encrypt a field under the current primary key after a key transition. */
+async function reencryptField(slug: string, column: string, plaintext: string): Promise<void> {
+  try {
+    await getAdminClient()
+      .from("links")
+      .update({ [column]: encrypt(plaintext) })
+      .eq("slug", slug);
+  } catch (err) {
+    console.error("[crypto] re-encryption failed:", slug, column, err);
+  }
+}
+
 /** DB row → app row: decrypt every sensitive field. */
 function decryptRow(row: LinkRecord): LinkRow {
+  const target = decryptField(row.target_url);
+  if (target.value !== null && target.keyIndex > 0) {
+    // Written under a fallback key — silently upgrade to the primary key.
+    void reencryptField(row.slug, "target_url", target.value);
+  }
   return {
     slug: row.slug,
-    target_url: maybeDecrypt(row.target_url) ?? "",
-    title: maybeDecrypt(row.title),
-    description: maybeDecrypt(row.description),
+    target_url: target.value ?? "",
+    title: decryptField(row.title).value,
+    description: decryptField(row.description).value,
     clicks: row.clicks,
     created_at: row.created_at,
     manage_token: row.manage_token, // HMAC of the user's token
     bio_enabled: row.bio_enabled,
-    bio_name: maybeDecrypt(row.bio_name),
-    bio_tagline: maybeDecrypt(row.bio_tagline),
-    bio_avatar: maybeDecrypt(row.bio_avatar),
+    bio_name: decryptField(row.bio_name).value,
+    bio_tagline: decryptField(row.bio_tagline).value,
+    bio_avatar: decryptField(row.bio_avatar).value,
     bio_links: decryptBioLinks(row.bio_links),
   };
 }
@@ -113,12 +142,13 @@ async function migrateRowToEncrypted(row: LinkRecord): Promise<void> {
 export async function getLinkByToken(token: string): Promise<LinkRow | null> {
   if (!isDbConfigured()) return null;
   const db = getAdminClient();
-  const hashed = hashToken(token);
+  const normalized = token.trim().toLowerCase();
 
+  // Try the HMAC under every configured key (covers key transitions).
   const { data } = await db
     .from("links")
     .select(LINK_COLUMNS)
-    .eq("manage_token", hashed)
+    .in("manage_token", hmacAll(`token:${normalized}`))
     .maybeSingle();
   if (data) return decryptRow(data as LinkRecord);
 
@@ -130,7 +160,7 @@ export async function getLinkByToken(token: string): Promise<LinkRow | null> {
     .maybeSingle();
   if (legacy.data) {
     const row = legacy.data as LinkRecord;
-    void db.from("links").update({ manage_token: hashed }).eq("slug", row.slug);
+    void db.from("links").update({ manage_token: hashToken(normalized) }).eq("slug", row.slug);
     return decryptRow(row);
   }
   return null;
