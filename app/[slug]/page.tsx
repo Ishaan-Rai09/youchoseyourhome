@@ -1,24 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import AutoRedirect from "@/components/auto-redirect";
-import { getAdminClient, isDbConfigured } from "@/lib/supabase";
+import BioPage from "@/components/bio-page";
+import { getLinkBySlug } from "@/lib/links";
+import { recordVisit } from "@/lib/analytics-server";
 import { brandLink } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
 
 type Props = { params: Promise<{ slug: string }> };
-
-async function fetchLink(slug: string) {
-  if (!isDbConfigured()) return null;
-  const { data } = await getAdminClient()
-    .from("links")
-    .select("slug, target_url, title, description")
-    .eq("slug", slug)
-    .maybeSingle();
-  return data as
-    | { slug: string; target_url: string; title: string | null; description: string | null }
-    | null;
-}
 
 /**
  * The branded URL. Server-rendered so link unfurlers (WhatsApp, Slack, X,
@@ -27,7 +17,7 @@ async function fetchLink(slug: string) {
  */
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const link = await fetchLink(slug);
+  const link = await getLinkBySlug(slug);
 
   if (!link) {
     return { title: `${brandLink(slug)} — not claimed yet`, robots: { index: false } };
@@ -41,21 +31,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title,
       description: link.description ?? undefined,
-      url: link.target_url,
+      images: [`/${slug}/opengraph-image`],
     },
   };
 }
 
 export default async function SlugPage({ params }: Props) {
   const { slug } = await params;
-  const link = await fetchLink(slug);
 
-  // Fire-and-forget click tracking.
-  if (link && isDbConfigured()) {
-    void getAdminClient()
-      .rpc("increment_clicks", { p_slug: link.slug })
-      .then(undefined, (err: unknown) => console.error("[click]", err));
-  }
+  // Fire-and-forget analytics: referrer, country, device class.
+  void recordVisit(slug);
+
+  const link = await getLinkBySlug(slug);
 
   if (!link) {
     return (
@@ -77,6 +64,10 @@ export default async function SlugPage({ params }: Props) {
         </div>
       </main>
     );
+  }
+
+  if (link.bio_enabled) {
+    return <BioPage link={link} />;
   }
 
   const displayTitle = link.title ?? link.slug;

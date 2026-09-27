@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Reveal from "@/components/reveal";
+import QrCode from "@/components/qr-code";
 import { BRAND_NAME, BRAND_HOST, brandLink } from "@/lib/brand";
 
 type Metadata = {
@@ -27,6 +28,22 @@ type ClaimedLink = {
 type Step = "input" | "branding" | "done";
 
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{0,48}[a-z0-9])?$/;
+
+/** Manage tokens for links claimed on this device (control room access). */
+type StoredLink = { slug: string; token: string; at: number };
+const STORE_KEY = "glowup_links";
+
+function addToken(slug: string, token: string) {
+  try {
+    const list = (JSON.parse(localStorage.getItem(STORE_KEY) ?? "[]") as StoredLink[]).filter(
+      (l) => l.slug !== slug,
+    );
+    list.unshift({ slug, token, at: Date.now() });
+    localStorage.setItem(STORE_KEY, JSON.stringify(list.slice(0, 50)));
+  } catch {
+    /* storage unavailable */
+  }
+}
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -73,6 +90,7 @@ export default function Home() {
   const [claiming, setClaiming] = useState(false);
   const [claimError, setClaimError] = useState<string | null>(null);
   const [claimed, setClaimed] = useState<ClaimedLink | null>(null);
+  const [manageToken, setManageToken] = useState<string | null>(null);
 
   // The real host this app runs on — localhost in dev, your domain in prod.
   const [host, setHost] = useState(BRAND_HOST);
@@ -162,9 +180,17 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slug: activeSlug, url: resolvedUrl }),
       });
-      const data = (await res.json()) as { link?: ClaimedLink; error?: string };
+      const data = (await res.json()) as {
+        link?: ClaimedLink;
+        manageToken?: string;
+        error?: string;
+      };
       if (!res.ok || !data.link) {
         throw new Error(data.error ?? "Claim failed.");
+      }
+      if (data.manageToken) {
+        addToken(data.link.slug, data.manageToken);
+        setManageToken(data.manageToken);
       }
       setClaimed(data.link);
       setStep("done");
@@ -193,6 +219,7 @@ export default function Home() {
     setSelected(null);
     setCustomSlug("");
     setClaimed(null);
+    setManageToken(null);
   };
 
   const scrollToTool = () =>
@@ -578,6 +605,28 @@ export default function Home() {
                       </p>
                     </div>
                   </div>
+                </div>
+
+                {/* QR + control room */}
+                <div className="flex flex-col items-center gap-5 border-t border-line px-5 py-5 sm:flex-row sm:justify-between">
+                  <div className="flex items-center gap-4">
+                    <QrCode text={fullLink(claimed.slug)} size={88} />
+                    <div>
+                      <Label>Take it offline</Label>
+                      <p className="mt-1.5 max-w-[240px] text-[12px] leading-relaxed text-faint">
+                        The QR opens {host}/{claimed.slug} — for posters, resumes
+                        and slides.
+                      </p>
+                    </div>
+                  </div>
+                  {manageToken && (
+                    <a
+                      href={`/manage?token=${manageToken}`}
+                      className="shrink-0 rounded-md bg-foreground px-5 py-2.5 text-[13px] font-semibold text-background transition hover:opacity-85"
+                    >
+                      Open control room →
+                    </a>
+                  )}
                 </div>
               </div>
             </div>

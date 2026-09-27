@@ -35,4 +35,9 @@ export type LinkRow = {
   description: string | null;
   clicks: number;
   created_at: string;
+  manage_token: string | null;
+  bio_enabled: boolean;
+  bio_name: string | null;
+  bio_tagline: string | null;
+  bio_links: Array<{ label: string; url: string }> | null;
 };
