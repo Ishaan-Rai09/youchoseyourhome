@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { normalizeUrl, scrapeMetadata } from "@/lib/scrape";
 import { isValidSlug } from "@/lib/slug";
 import { getAdminClient, isDbConfigured, type LinkRow } from "@/lib/supabase";
+import { brandLink } from "@/lib/brand";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -53,7 +54,7 @@ export async function POST(req: Request) {
   // Re-check availability right before insert (race-safe enough for MVP).
   const existing = await db.from("links").select("slug").eq("slug", slug).maybeSingle();
   if (existing.data) {
-    return NextResponse.json({ error: `purl.link/${slug} is already taken.` }, { status: 409 });
+    return NextResponse.json({ error: `${brandLink(slug)} is already taken.` }, { status: 409 });
   }
 
   // Scrape once more so we can show a preview card on the shareable page.
@@ -72,7 +73,7 @@ export async function POST(req: Request) {
 
   if (error) {
     if (error.code === "23505") {
-      return NextResponse.json({ error: `purl.link/${slug} is already taken.` }, { status: 409 });
+      return NextResponse.json({ error: `${brandLink(slug)} is already taken.` }, { status: 409 });
     }
     console.error("[links] insert failed:", error);
     return NextResponse.json({ error: "Could not save the mapping." }, { status: 500 });

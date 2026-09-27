@@ -4,14 +4,28 @@ import { isValidSlug } from "./slug";
 /**
  * Provider-agnostic AI: works with any OpenAI-compatible endpoint.
  *
- *   OpenAI:      AI_BASE_URL=https://api.openai.com/v1          AI_MODEL=gpt-4o-mini
- *   Groq:        AI_BASE_URL=https://api.groq.com/openai/v1     AI_MODEL=llama-3.3-70b-versatile
- *   OpenRouter:  AI_BASE_URL=https://openrouter.ai/api/v1       AI_MODEL=google/gemini-2.0-flash-001
- *   Ollama:      AI_BASE_URL=http://localhost:11434/v1          AI_MODEL=llama3.1
+ *   NVIDIA:      NVIDIA_API_KEY=nvapi-...                        AI_MODEL=meta/llama-3.3-70b-instruct
+ *   OpenAI:      OPENAI_API_KEY=sk-...                           AI_MODEL=gpt-4o-mini
+ *   Groq:        AI_API_KEY=gsk_...        AI_BASE_URL=https://api.groq.com/openai/v1
+ *   OpenRouter:  AI_API_KEY=sk-or-...      AI_BASE_URL=https://openrouter.ai/api/v1
+ *   Ollama:      AI_API_KEY=ollama         AI_BASE_URL=http://localhost:11434/v1
+ *
+ * The key is auto-detected by prefix: NVIDIA_API_KEY (or an `nvapi-` prefixed
+ * AI_API_KEY) points at NVIDIA's hosted NIM catalog by default.
  */
-const apiKey = process.env.AI_API_KEY ?? process.env.OPENAI_API_KEY ?? "";
-const baseURL = process.env.AI_BASE_URL || "https://api.openai.com/v1";
-const model = process.env.AI_MODEL || "gpt-4o-mini";
+const NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1";
+const NVIDIA_DEFAULT_MODEL = "meta/llama-3.3-70b-instruct";
+
+const nvidiaKey =
+  process.env.NVIDIA_API_KEY ??
+  (process.env.AI_API_KEY?.startsWith("nvapi-") ? process.env.AI_API_KEY : undefined) ??
+  "";
+const apiKey = process.env.OPENAI_API_KEY ?? nvidiaKey ?? process.env.AI_API_KEY ?? "";
+
+const isNvidia = Boolean(nvidiaKey);
+const baseURL =
+  process.env.AI_BASE_URL || (isNvidia ? NVIDIA_BASE_URL : "https://api.openai.com/v1");
+const model = process.env.AI_MODEL || (isNvidia ? NVIDIA_DEFAULT_MODEL : "gpt-4o-mini");
 
 export function isAiConfigured(): boolean {
   return apiKey.length > 0;

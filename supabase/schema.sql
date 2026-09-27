@@ -1,9 +1,11 @@
 -- Purl.link schema — run this in the Supabase Dashboard → SQL Editor → Run.
+-- Safe to re-run (idempotent).
+
 create extension if not exists pgcrypto;
 
 create table if not exists public.links (
   id uuid primary key default gen_random_uuid(),
-  slug text primary key,
+  slug text not null unique,
   target_url text not null,
   title text,
   description text,
@@ -12,9 +14,16 @@ create table if not exists public.links (
 );
 
 -- Slugs must be lowercase letters/numbers/hyphens, 1-50 chars, no leading/trailing hyphen.
-alter table public.links
-  add constraint links_slug_format
-  check (slug ~ '^[a-z0-9]([a-z0-9-]{0,48}[a-z0-9])?$');
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'links_slug_format'
+  ) then
+    alter table public.links
+      add constraint links_slug_format
+      check (slug ~ '^[a-z0-9]([a-z0-9-]{0,48}[a-z0-9])?$');
+  end if;
+end $$;
 
 create index if not exists links_target_idx on public.links (target_url);
 

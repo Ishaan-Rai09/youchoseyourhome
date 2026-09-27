@@ -49,7 +49,7 @@ export async function scrapeMetadata(url: string): Promise<SiteMetadata> {
     const res = await fetch(url, {
       headers: {
         "user-agent":
-          "Mozilla/5.0 (compatible; PurlBot/1.0; +https://purl.link) Chrome/124.0 Safari/537.36",
+          "Mozilla/5.0 (compatible; PurlBot/1.0) Chrome/124.0 Safari/537.36",
         accept: "text/html,application/xhtml+xml",
       },
       redirect: "follow",
