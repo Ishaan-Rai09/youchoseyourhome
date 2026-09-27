@@ -381,7 +381,7 @@ export default function ManagePage() {
       {/* Editors */}
       <section className="mt-6 grid gap-6 lg:grid-cols-2">
         {/* Destination */}
-        <div className="rounded-lg border border-line bg-card p-5">
+        <div className="min-w-0 rounded-lg border border-line bg-card p-5">
           <Label>Destination</Label>
           <p className="mt-2 text-[12px] leading-relaxed text-faint">
             Where {brandLink(link.slug)} sends people. Update it when you redeploy —
@@ -495,7 +495,7 @@ export default function ManagePage() {
         </div>
 
         {/* Preview */}
-        <div className="rounded-lg border border-line bg-card p-5">
+        <div className="min-w-0 rounded-lg border border-line bg-card p-5">
           <Label>{bioEnabled ? "Bio page preview" : "Redirect preview"}</Label>
           <div className="mt-3 overflow-hidden rounded-md border border-line bg-background">
             <div className="border-b border-line px-4 py-2.5 font-mono text-[10px] text-faint">
@@ -507,9 +507,9 @@ export default function ManagePage() {
                   {bioName || link.title || link.slug}
                 </p>
                 {(bioTagline || link.description) && (
-                  <p className="mt-1.5 text-[12px] leading-relaxed text-muted">
-                    {bioTagline || link.description}
-                  </p>
+                <p className="mt-1.5 break-words text-[12px] leading-relaxed text-muted">
+                  {bioTagline || link.description}
+                </p>
                 )}
                 <div className="mt-5 space-y-2">
                   {bioLinks

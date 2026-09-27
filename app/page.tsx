@@ -551,18 +551,18 @@ export default function Home() {
                   </p>
                 </div>
 
-                <div className="grid gap-6 px-5 py-6 lg:grid-cols-[1.2fr_0.8fr]">
-                  <div>
+                <div className="grid min-w-0 gap-6 px-5 py-6 lg:grid-cols-[1.2fr_0.8fr]">
+                  <div className="min-w-0">
                     <p className="text-sm text-muted">Your link</p>
                     <div className="mt-2 flex items-center justify-between gap-3 rounded-md border border-line bg-background px-3.5 py-3">
-                      <span className="truncate font-mono text-[15px] font-semibold">
+                      <span className="min-w-0 truncate font-mono text-[15px] font-semibold">
                         {host}/{claimed.slug}
                       </span>
                       <CopyButton text={fullLink(claimed.slug)} />
                     </div>
-                    <p className="mt-3 text-[13px] leading-relaxed text-faint">
+                    <p className="mt-3 break-words text-[13px] leading-relaxed text-faint">
                       Anyone who opens it lands straight on{" "}
-                      <span className="font-mono">
+                      <span className="break-all font-mono">
                         {claimed.targetUrl.replace(/^https?:\/\//, "")}
                       </span>
                       .
@@ -588,19 +588,19 @@ export default function Home() {
                   {/* What a shared-link preview shows */}
                   <div>
                     <Label>In a chat or DM</Label>
-                    <div className="mt-2.5 overflow-hidden rounded-md border border-line bg-background">
+                    <div className="mt-2.5 min-w-0 overflow-hidden rounded-md border border-line bg-background">
                       <div className="border-b border-line px-4 py-3">
-                        <p className="truncate text-[13px] font-medium">
+                        <p className="break-words text-[13px] font-medium">
                           {claimed.title ?? brandLink(claimed.slug)}
                         </p>
-                        <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-muted">
+                        <p className="mt-0.5 line-clamp-2 break-words text-xs leading-relaxed text-muted">
                           {claimed.description ?? claimed.targetUrl}
                         </p>
-                        <p className="mt-2 truncate font-mono text-[10px] uppercase tracking-wide text-faint">
+                        <p className="mt-2 break-all font-mono text-[10px] uppercase tracking-wide text-faint">
                           {host}/{claimed.slug}
                         </p>
                       </div>
-                      <p className="px-4 py-2.5 font-mono text-[11px] text-faint">
+                      <p className="break-all px-4 py-2.5 font-mono text-[11px] leading-relaxed text-faint">
                         ↳ opens {claimed.targetUrl.replace(/^https?:\/\//, "")}
                       </p>
                     </div>

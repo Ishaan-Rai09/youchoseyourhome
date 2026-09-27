@@ -43,7 +43,13 @@ export async function claimSlug(
 
   const { data, error } = await db
     .from("links")
-    .insert({ slug, target_url: targetUrl, title: meta.title, description: meta.description })
+    .insert({
+      slug,
+      target_url: targetUrl,
+      title: meta.title,
+      description: meta.description,
+      manage_token: crypto.randomUUID(),
+    })
     .select(LINK_COLUMNS)
     .single();
 
