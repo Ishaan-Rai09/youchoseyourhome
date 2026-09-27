@@ -22,6 +22,7 @@ function sanitize(link: {
   bio_enabled: boolean;
   bio_name: string | null;
   bio_tagline: string | null;
+  bio_avatar: string | null;
   bio_links: Array<{ label: string; url: string }> | null;
 }) {
   return {
@@ -35,6 +36,7 @@ function sanitize(link: {
       enabled: link.bio_enabled,
       name: link.bio_name,
       tagline: link.bio_tagline,
+      avatar: link.bio_avatar,
       links: link.bio_links ?? [],
     },
   };
@@ -82,6 +84,7 @@ export async function PATCH(req: Request) {
     update.bio_enabled = u.bioEnabled === true || u.bioEnabled === "true";
   if (u.bioName !== undefined) update.bio_name = (u.bioName as string) || null;
   if (u.bioTagline !== undefined) update.bio_tagline = (u.bioTagline as string) || null;
+  if (typeof u.bioAvatar === "string") update.bio_avatar = u.bioAvatar;
   if (Array.isArray(u.bioLinks)) update.bio_links = u.bioLinks as Array<{ label: string; url: string }>;
 
   const result = await updateLink(link.slug, update);

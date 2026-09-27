@@ -39,5 +39,6 @@ export type LinkRow = {
   bio_enabled: boolean;
   bio_name: string | null;
   bio_tagline: string | null;
+  bio_avatar: string | null;
   bio_links: Array<{ label: string; url: string }> | null;
 };

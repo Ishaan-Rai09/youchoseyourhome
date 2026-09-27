@@ -7,7 +7,7 @@ export type ClaimResult =
   | { ok: false; error: "taken" | "db" | "not_configured" };
 
 const LINK_COLUMNS =
-  "slug, target_url, title, description, clicks, created_at, manage_token, bio_enabled, bio_name, bio_tagline, bio_links";
+  "slug, target_url, title, description, clicks, created_at, manage_token, bio_enabled, bio_name, bio_tagline, bio_avatar, bio_links";
 
 export async function getLinkBySlug(slug: string): Promise<LinkRow | null> {
   if (!isDbConfigured()) return null;
@@ -67,6 +67,7 @@ export type LinkUpdate = {
   bio_enabled?: boolean;
   bio_name?: string | null;
   bio_tagline?: string | null;
+  bio_avatar?: string | null;
   bio_links?: BioLink[];
 };
 
@@ -101,6 +102,10 @@ export async function updateLink(
   if (update.bio_name !== undefined) patch.bio_name = update.bio_name?.slice(0, 80) ?? null;
   if (update.bio_tagline !== undefined)
     patch.bio_tagline = update.bio_tagline?.slice(0, 140) ?? null;
+  if (update.bio_avatar !== undefined) {
+    const v = (update.bio_avatar ?? "").trim();
+    patch.bio_avatar = /^https?:\/\/.+/i.test(v) ? v.slice(0, 400) : null;
+  }
   if (update.bio_links !== undefined) patch.bio_links = cleanBioLinks(update.bio_links);
 
   if (Object.keys(patch).length === 0) return { ok: true };
@@ -127,6 +132,7 @@ export async function deleteLink(slug: string): Promise<{ ok: boolean; error?: s
 export type LinkStats = {
   total: number;
   last7Days: number;
+  direct: number;
   referrers: Array<{ host: string; count: number }>;
   countries: Array<{ country: string; count: number }>;
   devices: Array<{ device: string; count: number }>;
@@ -137,6 +143,7 @@ export async function getLinkStats(slug: string): Promise<LinkStats> {
   const empty: LinkStats = {
     total: 0,
     last7Days: 0,
+    direct: 0,
     referrers: [],
     countries: [],
     devices: [],
@@ -166,6 +173,7 @@ export async function getLinkStats(slug: string): Promise<LinkStats> {
   const deviceCounts = new Map<string, number>();
   const dayCounts = new Map<string, number>();
   let last7Days = 0;
+  let direct = 0;
 
   for (const row of data as Array<{
     ts: string;
@@ -175,7 +183,11 @@ export async function getLinkStats(slug: string): Promise<LinkStats> {
   }>) {
     const tsMs = new Date(row.ts).getTime();
     if (tsMs >= weekAgo) last7Days += 1;
-    if (row.referrer_host) refCounts.set(row.referrer_host, (refCounts.get(row.referrer_host) ?? 0) + 1);
+    if (row.referrer_host) {
+      refCounts.set(row.referrer_host, (refCounts.get(row.referrer_host) ?? 0) + 1);
+    } else {
+      direct += 1;
+    }
     if (row.country) countryCounts.set(row.country, (countryCounts.get(row.country) ?? 0) + 1);
     if (row.device) deviceCounts.set(row.device, (deviceCounts.get(row.device) ?? 0) + 1);
     const day = row.ts.slice(0, 10);
@@ -194,6 +206,7 @@ export async function getLinkStats(slug: string): Promise<LinkStats> {
   return {
     total: data.length,
     last7Days,
+    direct,
     referrers: top(refCounts).map((r) => ({ host: r.key, count: r.count })),
     countries: top(countryCounts).map((r) => ({ country: r.key, count: r.count })),
     devices: top(deviceCounts).map((r) => ({ device: r.key, count: r.count })),
