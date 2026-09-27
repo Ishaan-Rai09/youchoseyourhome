@@ -38,7 +38,23 @@ function readStored(): StoredLink[] {
     return JSON.parse(localStorage.getItem(STORE_KEY) ?? "[]") as StoredLink[];
   } catch {
     return [];
-    }
+  }
+}
+
+async function lookupToken(token: string): Promise<{ token: string; slug: string | null; clicks?: number } | null> {
+  try {
+    const res = await fetch("/api/manage/check", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tokens: [token] }),
+    });
+    const data = (await res.json()) as {
+      results?: Array<{ token: string; slug: string | null; clicks?: number }>;
+    };
+    return data.results?.[0] ?? null;
+  } catch {
+    return null;
+  }
 }
 function writeStored(list: StoredLink[]) {
   try {
@@ -168,32 +184,57 @@ export default function ManagePage() {
     let cancelled = false;
     const boot = async () => {
       const params = new URLSearchParams(window.location.search);
-      const t = params.get("token");
-      const list = readStored();
+      const urlToken = params.get("token");
+      let list = readStored();
 
-      // Sync the saved list with the database: drop links that no longer
-      // exist and refresh their click counts.
+      // A token arrived via URL (old share links): validate, absorb it into
+      // device storage, then strip it from the address bar so it stops
+      // leaking into logs, history, and screenshots.
+      if (urlToken && TOKEN_RE.test(urlToken)) {
+        const found = await lookupToken(urlToken);
+        if (found?.slug) {
+          list = [
+            { slug: found.slug, token: urlToken, at: Date.now() },
+            ...list.filter((l) => l.token !== urlToken && l.slug !== found.slug),
+          ];
+          writeStored(list);
+        }
+        window.history.replaceState(null, "", "/manage");
+      }
+
+      // Sync the saved list with the database in ONE batched request:
+      // drop deleted links, refresh click counts.
       let valid: StoredLink[] = list;
       if (list.length > 0) {
-        const checks = await Promise.allSettled(
-          list.slice(0, 20).map(async (l) => {
-            const res = await fetch(`/api/manage?token=${encodeURIComponent(l.token)}`);
-            if (!res.ok) return null;
-            const data = (await res.json()) as { link?: { clicks: number } };
-            return { ...l, clicks: data.link?.clicks ?? 0 };
-          }),
-        );
-        valid = checks
-          .map((c) => (c.status === "fulfilled" ? c.value : null))
-          .filter((x): x is StoredLink & { clicks: number } => x !== null);
-        writeStored(valid);
+        try {
+          const res = await fetch("/api/manage/check", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tokens: list.slice(0, 50).map((l) => l.token) }),
+          });
+          const data = (await res.json()) as {
+            results?: Array<{ token: string; slug: string | null; clicks?: number }>;
+          };
+          if (data.results) {
+            const byToken = new Map(data.results.map((r) => [r.token, r]));
+            valid = list
+              .map((l) => {
+                const r = byToken.get(l.token);
+                return r && r.slug ? { ...l, slug: r.slug, clicks: r.clicks ?? 0 } : null;
+              })
+              .filter((x): x is StoredLink & { clicks: number } => x !== null);
+            writeStored(valid);
+          }
+        } catch {
+          /* keep the local list on network failure */
+        }
       }
 
       if (cancelled) return;
       setStored(valid);
-      if (t) {
-        setToken(t);
-        await load(t);
+      if (urlToken && TOKEN_RE.test(urlToken)) {
+        setToken(urlToken);
+        await load(urlToken);
       } else {
         setLoading(false);
       }

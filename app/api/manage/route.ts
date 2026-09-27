@@ -101,6 +101,9 @@ export async function PATCH(req: Request) {
 
 /** DELETE /api/manage — { token } removes the link (slug becomes claimable again). */
 export async function DELETE(req: Request) {
+  const gate = rateLimit(`delete:${clientIp(req)}`, 5, 60_000);
+  if (!gate.ok) return NextResponse.json({ error: "Slow down." }, { status: 429 });
+
   let body: { token?: string };
   try {
     body = (await req.json()) as { token?: string };

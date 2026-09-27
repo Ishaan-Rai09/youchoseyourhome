@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { normalizeUrl, scrapeMetadata } from "@/lib/scrape";
+import { assertSafeUrl } from "@/lib/ssrf";
 import { isValidSlug } from "@/lib/slug";
 import { claimSlug } from "@/lib/links";
 import { brandLink } from "@/lib/brand";
-import { getAdminClient, isDbConfigured, type LinkRow } from "@/lib/supabase";
+import { isDbConfigured } from "@/lib/supabase";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -13,7 +14,7 @@ type CreateBody = {
   url?: string;
 };
 
-/** POST /api/links — claim a slug: { slug, url } → mapping + manage token. */
+/** POST /api/links — claim a slug: { slug, url } → mapping + one-time manage token. */
 export async function POST(req: Request) {
   const gate = rateLimit(`claim:${clientIp(req)}`, 6, 60_000);
   if (!gate.ok) {
@@ -42,6 +43,16 @@ export async function POST(req: Request) {
   if (!target) {
     return NextResponse.json({ error: "Provide a valid deployed URL." }, { status: 400 });
   }
+
+  // SSRF guard: never let a claim point the scraper at internal infrastructure.
+  const ssrf = await assertSafeUrl(target);
+  if (ssrf) {
+    return NextResponse.json(
+      { error: `That URL is not allowed (${ssrf}).` },
+      { status: 400 },
+    );
+  }
+
   if (!isDbConfigured()) {
     return NextResponse.json(
       { error: "Database not configured. Set Supabase env vars first." },
@@ -62,52 +73,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Could not save the mapping." }, { status: 500 });
   }
 
-  const row = result.link;
   return NextResponse.json(
     {
       link: {
-        slug: row.slug,
-        targetUrl: row.target_url,
-        title: row.title,
-        description: row.description,
+        slug: result.link.slug,
+        targetUrl: result.link.target_url,
+        title: result.link.title,
+        description: result.link.description,
       },
-      manageToken: row.manage_token,
+      manageToken: result.manageToken,
     },
     { status: 201 },
   );
 }
-
-/** GET /api/links?url=... — list claimed slugs for a given target URL. */
-export async function GET(req: Request) {
-  const target = normalizeUrl(new URL(req.url).searchParams.get("url") ?? "");
-  if (!target) {
-    return NextResponse.json({ error: "Provide a valid url param." }, { status: 400 });
-  }
-
-  if (!isDbConfigured()) {
-    return NextResponse.json({ links: [] });
-  }
-
-  let host = "";
-  try {
-    host = new URL(target).hostname;
-  } catch {
-    return NextResponse.json({ error: "Invalid url." }, { status: 400 });
-  }
-
-  const { data, error } = await getAdminClient()
-    .from("links")
-    .select("slug, target_url, title, clicks, created_at")
-    .filter("target_url", "ilike", `https://${host}%`)
-    .order("created_at", { ascending: false })
-    .limit(50);
-
-  if (error) {
-    console.error("[links] query failed:", error);
-    return NextResponse.json({ error: "Lookup failed." }, { status: 500 });
-  }
-
-  const rows = (data as Pick<LinkRow, "slug" | "target_url" | "title" | "clicks" | "created_at">[] | null) ?? [];
-  return NextResponse.json({ links: rows });
-}
-
