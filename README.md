@@ -1,23 +1,72 @@
-# Purl — branded links for your deployments
+# Glowup — give your deploy URL a glow up
 
-Deploy platforms give you URLs like `my-app-8f3k2.vercel.app` or
-`fancy-panda-abc123.netlify.app`. They work, but they don't represent your brand.
+Deploy platforms give you URLs like `beamdrop-6ym9.onrender.com` or
+`my-app-8f3k2.vercel.app`. They work, but they don't represent your project.
 
-Purl turns any deployed URL into a clean branded link:
+Glowup turns any deployed URL into a clean branded link:
 
-1. **Paste your deployed URL** — Purl scrapes its title/description.
-2. **Describe your brand** — AI suggests brandable links like `your-domain/roast-and-ritual`.
-3. **Claim it** — the branded URL serves your brand's link-preview tags and
-   redirects human visitors to your real deployment.
+1. **Paste your deployed URL** — Glowup reads its title and description.
+2. **Describe your project** — AI suggests brandable names, or type your own.
+3. **Claim it** — `your-app.vercel.app/your-name` now opens your real site,
+   unfurls with your project's title in chats, and comes with a control room.
 
-Perfect for resumes, bios, pitch decks, DMs — anywhere a first impression matters.
+No domain, no DNS, no code. The branded link lives at `<host>/<slug>` wherever
+Glowup itself is deployed.
+
+## Features
+
+- **Branded redirects** — `/<slug>` instantly sends visitors to the real
+  deployment. Link unfurlers (WhatsApp, X, Slack, iMessage) see the project's
+  title, description, and an auto-generated preview card instead of a bare URL.
+- **AI name suggestions** — provider-agnostic (NVIDIA NIM by default, also
+  OpenAI / Groq / OpenRouter / Ollama). Works without a key too: a heuristic
+  engine derives names from the site title and your description.
+- **Control room** (`/manage`) — per-link dashboard: live click stats,
+  14-day chart, referrers, countries, devices, QR code, and a link picker for
+  everything claimed on the device.
+- **Editable destination** — redeployed? Update where the link points; the
+  pretty URL never changes.
+- **Bio-page mode** — flip a switch and `/<slug>` becomes a Linktree-style
+  mini page (avatar/monogram, tagline, up to 8 links). With no links filled
+  in, it flashes the brand card and auto-redirects.
+- **QR codes** — for resumes, posters, and slides.
+- **Click analytics** — every redirect records referrer, country, and device
+  class, all stored encrypted.
+
+## Security model
+
+Glowup is built so the database alone reveals nothing about users:
+
+- **Application-layer encryption (AES-256-GCM)** — destination URLs, titles,
+  descriptions, bio fields, and every analytics datum (referrer, country,
+  device) are encrypted by the app before they reach Postgres. The DB stores
+  only ciphertext; old plaintext rows are re-encrypted lazily on first touch.
+  The key never leaves the server (`GLOWUP_ENCRYPTION_KEY`).
+- **Hashed manage tokens** — ownership tokens are stored only as HMAC-SHA256
+  hashes. A stolen database cannot take over anyone's link.
+- **SSRF-hardened scraper** — user-supplied URLs are DNS-resolved and checked
+  against private/loopback/link-local ranges (including cloud metadata
+  endpoints), redirects are followed manually with re-validation, ports are
+  locked to 80/443, and responses are capped at 512 KB.
+- **No enumeration** — there is no endpoint that lists links by target URL.
+- **Rate limits** on claims, suggestions, scraping, edits, and deletes.
+- **Security headers** — HSTS (preload), `X-Frame-Options: DENY`, `nosniff`,
+  strict `Referrer-Policy`, restrictive `Permissions-Policy`.
+- **RLS everywhere** — both tables deny the anon key by default; all reads and
+  writes go through server routes using the service-role key.
+
+One honest limit, by design: the server must know each destination URL to
+perform the redirect — that is the product. Everything else about a user is
+opaque to the database.
 
 ## Stack
 
-- Next.js 16 (App Router) + TypeScript + Tailwind v4
-- Supabase (Postgres) for link mappings, RLS on — all DB access via server routes
-- Provider-agnostic AI via the OpenAI SDK (OpenAI / Groq / OpenRouter / Ollama)
-- Cheerio for metadata scraping
+- Next.js 16 (App Router) + TypeScript + Tailwind CSS v4
+- Supabase (Postgres) for links and click events
+- Provider-agnostic AI via the OpenAI SDK (NVIDIA NIM, OpenAI, Groq,
+  OpenRouter, Ollama)
+- Cheerio for metadata scraping, `qrcode` for QR generation,
+  `next/og` for dynamic preview cards
 
 ## Setup
 
@@ -29,29 +78,33 @@ cp .env.example .env.local   # fill in the values
 ### 1. Supabase
 
 1. Create a project at [supabase.com](https://supabase.com) (free tier works).
-2. In the Dashboard → **SQL Editor**, paste the contents of
-   [`supabase/schema.sql`](./supabase/schema.sql) and click **Run**.
-3. In **Project Settings → API**, copy the Project URL, anon key and
-   `service_role` key into `.env.local`.
+2. In the Dashboard → **SQL Editor**, run these files in order:
+   - [`supabase/schema.sql`](./supabase/schema.sql) — links table + RLS
+   - [`supabase/migration-002.sql`](./supabase/migration-002.sql) — manage
+     tokens, bio fields, click events
+   - [`supabase/migration-003.sql`](./supabase/migration-003.sql) — token default
+   - [`supabase/migration-004.sql`](./supabase/migration-004.sql) — bio avatar
+   - [`supabase/migration-005.sql`](./supabase/migration-005.sql) — hashed tokens
+3. Copy the Project URL, anon key, and `service_role` key into `.env.local`.
 
-### 2. AI suggestions (optional)
+### 2. Encryption key (required)
 
-Without an API key the app still works — suggestions come from a smart
-heuristic engine (brand name + keyword extraction). Add any OpenAI-compatible
-key to unlock AI suggestions. **NVIDIA NIM** is a first-class provider — grab a
-free key at [build.nvidia.com](https://build.nvidia.com) and it's auto-detected:
-
-```
-NVIDIA_API_KEY=nvapi-...
-# defaults applied automatically:
-#   base URL: https://integrate.api.nvidia.com/v1
-#   model:    meta/llama-3.3-70b-instruct
+```bash
+openssl rand -base64 32
 ```
 
-Other providers — set `AI_API_KEY` (+ `AI_BASE_URL`/`AI_MODEL` as needed):
+Put the result in `GLOWUP_ENCRYPTION_KEY` (`.env.local` locally, Vercel env
+vars in production) and **back it up** — losing it makes stored data
+permanently unreadable.
 
-```
-# Groq (free tier)
+### 3. AI suggestions (optional)
+
+NVIDIA NIM is the default — grab a free key at
+[build.nvidia.com](https://build.nvidia.com) and set `NVIDIA_API_KEY`. Without
+any key the app falls back to smart heuristic suggestions. Other providers:
+
+```bash
+# Groq
 AI_API_KEY=gsk_...
 AI_BASE_URL=https://api.groq.com/openai/v1
 AI_MODEL=llama-3.3-70b-versatile
@@ -60,29 +113,33 @@ AI_MODEL=llama-3.3-70b-versatile
 OPENAI_API_KEY=sk-...
 ```
 
+### 4. Deploying
+
+Any Node host works; Vercel is the path of least resistance (import the repo,
+paste the env vars, deploy). The UI auto-detects its own host, so branded
+links work immediately on the deployed domain — a custom domain is optional
+(set `NEXT_PUBLIC_BRAND_HOST` if you want server-rendered text to match one).
+
 ## How redirects work
 
-`https://your-host/<slug>` is a server-rendered page that:
+`/<slug>` is a server-rendered page that:
 
-- emits the site's **real title/description as OpenGraph tags**, so shared-link
-  previews (WhatsApp, Slack, X, iMessage) show the brand, not Purl;
-- JS-redirects human visitors (~600 ms) to the target deployment;
-- bots never run JS, so unfurlers only ever see the branded preview;
-- increments a click counter via a Postgres RPC.
+- emits the project's **real title/description as OpenGraph tags** plus an
+  auto-generated preview card, so shared links unfurl with the brand;
+- JS-redirects human visitors (~600 ms) to the destination — or shows the bio
+  page when bio mode is on;
+- records an encrypted click event (referrer, country, device) per visit,
+  skipping bot/prefetch traffic.
 
-## Branded link host
-
-Links are shown as `<host>/<slug>` where `<host>` is wherever the app runs —
-`localhost:3000` in dev, your Vercel/Netlify domain in production. No custom
-domain required. After deploying, optionally set `NEXT_PUBLIC_BRAND_HOST` in
-your env so server-rendered text (API error messages) matches your domain.
+## API
 
 | Route | Method | Purpose |
 | --- | --- | --- |
 | `/api/metadata?url=` | GET | Scrape title/description/site name for a URL |
-| `/api/suggest` | POST | `{ url, userDescription }` → available slug suggestions (AI + heuristics) |
-| `/api/links` | POST | `{ slug, url }` → claim a branded link |
-| `/api/links?url=` | GET | List links claimed for a target URL |
+| `/api/suggest` | POST | `{ url, userDescription }` → available slug suggestions |
+| `/api/links` | POST | `{ slug, url }` → claim a link (returns a one-time manage token) |
+| `/api/manage` | GET/PATCH/DELETE | Token-authenticated stats, edits, deletion |
+| `/api/manage/check` | POST | Batch-validate tokens (body, never URLs) |
 
 ## Scripts
 
