@@ -89,10 +89,22 @@ export async function PATCH(req: Request) {
 
   const result = await updateLink(link.slug, update);
   if (!result.ok) {
-    const status = result.error === "invalid_url" ? 400 : 500;
-    const message =
-      result.error === "invalid_url" ? "That destination URL doesn't look valid." : "Update failed.";
-    return NextResponse.json({ error: message }, { status });
+    if (result.error === "invalid_url") {
+      return NextResponse.json(
+        { error: "That destination URL doesn't look valid." },
+        { status: 400 },
+      );
+    }
+    if (result.error === "schema") {
+      return NextResponse.json(
+        {
+          error:
+            "Database is missing a column — run the latest file from supabase/ in the SQL Editor, then retry.",
+        },
+        { status: 503 },
+      );
+    }
+    return NextResponse.json({ error: "Update failed." }, { status: 500 });
   }
 
   const fresh = await getLinkByToken(token);

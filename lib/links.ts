@@ -79,8 +79,9 @@ function decryptRow(row: LinkRecord): LinkRow {
   };
 }
 
-function encryptBioLinks(links: BioLink[] | null | undefined): string | null {
-  if (!links || links.length === 0) return null;
+function encryptBioLinks(links: BioLink[] | null | undefined): BioLink[] | string {
+  // NB: the column is NOT NULL, so "empty" must be [] — never null.
+  if (!links || links.length === 0) return [];
   return encrypt(JSON.stringify(links.slice(0, 8)));
 }
 
@@ -233,9 +234,12 @@ function cleanBioLinks(raw: unknown): BioLink[] {
     .slice(0, 8)
     .map((item) => {
       const l = item as { label?: unknown; url?: unknown };
+      let url = String(l.url ?? "").trim().slice(0, 300);
+      // Users type "myapp.vercel.app" — be forgiving and assume https.
+      if (url && !/^https?:\/\//i.test(url)) url = `https://${url}`;
       return {
         label: String(l.label ?? "").slice(0, 60),
-        url: String(l.url ?? "").slice(0, 300),
+        url,
       };
     })
     .filter((l) => l.label && /^https?:\/\//i.test(l.url));
@@ -264,7 +268,8 @@ export async function updateLink(
   }
   if (update.bio_links !== undefined) {
     const links = cleanBioLinks(update.bio_links);
-    patch.bio_links = links.length ? encrypt(JSON.stringify(links)) : null;
+    // NOT NULL column: empty list must be written as [], never null.
+    patch.bio_links = links.length ? encrypt(JSON.stringify(links)) : [];
   }
 
   if (Object.keys(patch).length === 0) return { ok: true };
@@ -272,6 +277,8 @@ export async function updateLink(
   const { error } = await getAdminClient().from("links").update(patch).eq("slug", slug);
   if (error) {
     console.error("[links] update failed:", error);
+    // 42703 = unknown column → the database is missing a migration.
+    if (error.code === "42703") return { ok: false, error: "schema" };
     return { ok: false, error: "db" };
   }
   return { ok: true };
